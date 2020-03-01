@@ -88,7 +88,8 @@ def prepDest(folder, spaces):
             os.makedirs(folder)
             return True
     else:
-        print("{} Folder {} already exists".format(spaces, folder))
+        # print("{} Folder {} already exists".format(spaces, folder))
+        return True
     return False
 
 
