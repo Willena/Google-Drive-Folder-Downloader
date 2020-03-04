@@ -127,8 +127,12 @@ def downloadFile(service, spaces, file_name, file_id, mimeType, dest_folder):
                 file_name = file_name + ".pdf"
         if valid:
             print("{}Downloading -- {}".format(spaces, file_name))
-            response = request.execute()
-            with open(os.path.join(dest_folder, file_name), "wb") as wer:
+            response = request.execute()      
+            filepath = os.path.join(dest_folder, file_name)
+            
+            #Make sure the path exist before writing
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            with open(filepath, "wb") as wer:
                 if args.verbose:
                     print("Writing file {} to folder {}.\n".format(file_name, dest_folder))
                 wer.write(response)
