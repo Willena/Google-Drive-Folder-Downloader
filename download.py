@@ -183,7 +183,7 @@ def getlist(ds, q, **kwargs):
 def getFolderFiles(service, folderId, folderName, dest_folder, depth):
     # recursive function that walks down the folder tree creating the local folders and downloading the files
     spaces = ' ' * depth
-    d_folder = dest_folder + "\\" + folderName
+    d_folder = dest_folder + os.path.sep + folderName
     prepDest(d_folder, spaces)
     if (args.lista or args.verbose):
         #		print('%s+%s\n%s	 %s\n' % (spaces, folderId, spaces, folderName))
