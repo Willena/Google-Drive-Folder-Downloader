@@ -51,6 +51,7 @@ from googleapiclient.discovery import build
 # Authorize API https://developers.google.com/drive/v3/web/quickstart/python#step_1_turn_on_the_api_name
 # Download the client_secret.json to same dir as this script
 #########################################################################
+from googleapiclient.errors import HttpError
 
 SCOPES = 'https://www.googleapis.com/auth/drive'
 APPLICATION_NAME = 'Drive File API - Python'
@@ -58,6 +59,9 @@ FOLDER_TYPE = 'application/vnd.google-apps.folder'
 to_dir = str(date.today()) + "_drive_backup"
 global num_files
 global num_skiped
+
+toRetry = []
+
 
 try:
     import argparse
@@ -185,6 +189,7 @@ def getlist(ds, q, **kwargs):
 
 
 def getFolderFiles(service, folderId, folderName, dest_folder, depth):
+    global toRetry
     # recursive function that walks down the folder tree creating the local folders and downloading the files
     spaces = ' ' * depth
     d_folder = dest_folder + os.path.sep + folderName
@@ -208,7 +213,12 @@ def getFolderFiles(service, folderId, folderName, dest_folder, depth):
         if (args.lista or args.verbose):
             #			print('%s -ID: %s NAME: %s TYPE: %s' % (spaces, f['id'], f['name'], f['mimeType']))
             print("{} -ID: {} NAME: {} TYPE: {}".format(spaces, f['id'], f['name'], f['mimeType']))
-        downloadFile(service, spaces, f['name'], f['id'], f['mimeType'], d_folder)
+        try:
+            downloadFile(service, spaces, f['name'], f['id'], f['mimeType'], d_folder)
+        except HttpError:
+            toRetry.append((f['name'], f['id'], f['mimeType'], d_folder))
+            print("{} -ID: {} NAME: {} TYPE: {} -- FAILED -- Stored for later try".format(spaces, f['id'], f['name'], f['mimeType']))
+
     print("{} files downloaded so far\n".format(num_files))
 
 
@@ -257,6 +267,7 @@ def main(basedir):
 
                 if not folderId is None:
                     getFolderFiles(service, folderId, from_dir, to_dir, 0)
+
                 else:
                     print("Aborting. Source folder {} not found".format(from_dir))
 
@@ -270,6 +281,15 @@ def main(basedir):
                     print("{} total files downloaded.\n".format(num_files))
                     if num_skiped > 0:
                         print("{} total skiped files, not downloaded.".format(num_skiped))
+
+                    print("Retrying - Files marked as Errored")
+                    for item in toRetry:
+                        print("{} -ID: {} NAME: {} TYPE: {} PATH: {}".format("", item[0], item[1], item[2], item[3]))
+                        try:
+                            downloadFile(service, "", item[0], item[1], item[2], item[3])
+                        except Exception:
+                            print("STILL FAILLING ! {} -ID: {} NAME: {} TYPE: {} PATH: {} -- Not Retrying -- Skiped".format("", item[0], item[1], item[2], item[3]))
+
                 else:
                     print("Aborting. Source folder {} not found".format(from_dir))
             else:
