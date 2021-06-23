@@ -53,7 +53,7 @@ from googleapiclient.discovery import build
 #########################################################################
 from googleapiclient.errors import HttpError
 
-SCOPES = 'https://www.googleapis.com/auth/drive'
+SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 APPLICATION_NAME = 'Drive File API - Python'
 FOLDER_TYPE = 'application/vnd.google-apps.folder'
 to_dir = str(date.today()) + "_drive_backup"
@@ -232,20 +232,27 @@ def main(basedir):
     print("Connecting with Google Drive")
 
     try:
-
-        creds = None
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-                creds = flow.run_local_server(port=1337)
-            with open('token.pickle', 'wb') as token:
-                pickle.dump(creds, token, protocol=0)
-        service = build('drive', 'v3', credentials=creds)
+      """Shows basic usage of the Drive v3 API.
+      Prints the names and ids of the first 10 files the user has access to.
+      """
+      creds = None
+      # The file token.json stores the user's access and refresh tokens, and is
+      # created automatically when the authorization flow completes for the first
+      # time.
+      if os.path.exists('token.json'):
+          creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+      # If there are no (valid) credentials available, let the user log in.
+      if not creds or not creds.valid:
+          if creds and creds.expired and creds.refresh_token:
+              creds.refresh(Request())
+          else:
+              flow = InstalledAppFlow.from_client_secrets_file(
+                  'credentials.json', SCOPES)
+              creds = flow.run_local_server(port=1337)
+          # Save the credentials for the next run
+          with open('token.json', 'w') as token:
+              token.write(creds.to_json())
+      service = build('drive', 'v3', credentials=creds)
 
     except Exception:
         print("Error connecting to Google Drive")
