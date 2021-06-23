@@ -54,7 +54,7 @@ from googleapiclient.discovery import build
 #########################################################################
 from googleapiclient.errors import HttpError
 
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 APPLICATION_NAME = 'Drive File API - Python'
 FOLDER_TYPE = 'application/vnd.google-apps.folder'
 to_dir = str(date.today()) + "_drive_backup"
@@ -215,10 +215,11 @@ def getFolderFiles(service, folderId, folderName, dest_folder, depth):
             print("{} -ID: {} NAME: {} TYPE: {}".format(spaces, f['id'], f['name'], f['mimeType']))
         try:
             downloadFile(service, spaces, f['name'], f['id'], f['mimeType'], d_folder)
-        except HttpError:
+        except HttpError as e:
             toRetry.append((f['name'], f['id'], f['mimeType'], d_folder))
-            print("{} -ID: {} NAME: {} TYPE: {} -- FAILED -- Stored for later try".format(spaces, f['id'], f['name'],
-                                                                                          f['mimeType']))
+            print(
+                "{} -ID: {} NAME: {} TYPE: {} -- FAILED ({}) -- Stored for later try".format(spaces, f['id'], f['name'],
+                                                                                             f['mimeType'], e))
 
     print("{} files downloaded so far\n".format(num_files))
 
