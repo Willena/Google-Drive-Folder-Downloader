@@ -4,6 +4,7 @@ import pickle
 from datetime import date
 
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
@@ -61,7 +62,6 @@ global num_files
 global num_skiped
 
 toRetry = []
-
 
 try:
     import argparse
@@ -131,10 +131,10 @@ def downloadFile(service, spaces, file_name, file_id, mimeType, dest_folder):
                 file_name = file_name + ".pdf"
         if valid:
             print("{}Downloading -- {}".format(spaces, file_name))
-            response = request.execute()      
+            response = request.execute()
             filepath = os.path.join(dest_folder, file_name)
-            
-            #Make sure the path exist before writing
+
+            # Make sure the path exist before writing
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             with open(filepath, "wb") as wer:
                 if args.verbose:
@@ -217,7 +217,8 @@ def getFolderFiles(service, folderId, folderName, dest_folder, depth):
             downloadFile(service, spaces, f['name'], f['id'], f['mimeType'], d_folder)
         except HttpError:
             toRetry.append((f['name'], f['id'], f['mimeType'], d_folder))
-            print("{} -ID: {} NAME: {} TYPE: {} -- FAILED -- Stored for later try".format(spaces, f['id'], f['name'], f['mimeType']))
+            print("{} -ID: {} NAME: {} TYPE: {} -- FAILED -- Stored for later try".format(spaces, f['id'], f['name'],
+                                                                                          f['mimeType']))
 
     print("{} files downloaded so far\n".format(num_files))
 
@@ -232,30 +233,31 @@ def main(basedir):
     print("Connecting with Google Drive")
 
     try:
-      """Shows basic usage of the Drive v3 API.
-      Prints the names and ids of the first 10 files the user has access to.
-      """
-      creds = None
-      # The file token.json stores the user's access and refresh tokens, and is
-      # created automatically when the authorization flow completes for the first
-      # time.
-      if os.path.exists('token.json'):
-          creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-      # If there are no (valid) credentials available, let the user log in.
-      if not creds or not creds.valid:
-          if creds and creds.expired and creds.refresh_token:
-              creds.refresh(Request())
-          else:
-              flow = InstalledAppFlow.from_client_secrets_file(
-                  'credentials.json', SCOPES)
-              creds = flow.run_local_server(port=1337)
-          # Save the credentials for the next run
-          with open('token.json', 'w') as token:
-              token.write(creds.to_json())
-      service = build('drive', 'v3', credentials=creds)
+        """Shows basic usage of the Drive v3 API.
+        Prints the names and ids of the first 10 files the user has access to.
+        """
+        creds = None
+        # The file token.json stores the user's access and refresh tokens, and is
+        # created automatically when the authorization flow completes for the first
+        # time.
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                creds = flow.run_local_server(port=1337)
+            # Save the credentials for the next run
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
+        service = build('drive', 'v3', credentials=creds)
 
-    except Exception:
+    except Exception as e:
         print("Error connecting to Google Drive")
+        print(e)
     else:
 
         print("Connected. Now let´s read the files")
@@ -295,7 +297,9 @@ def main(basedir):
                         try:
                             downloadFile(service, "", item[0], item[1], item[2], item[3])
                         except Exception:
-                            print("STILL FAILLING ! {} -ID: {} NAME: {} TYPE: {} PATH: {} -- Not Retrying -- Skiped".format("", item[0], item[1], item[2], item[3]))
+                            print(
+                                "STILL FAILLING ! {} -ID: {} NAME: {} TYPE: {} PATH: {} -- Not Retrying -- Skiped".format(
+                                    "", item[0], item[1], item[2], item[3]))
 
                 else:
                     print("Aborting. Source folder {} not found".format(from_dir))
