@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import os
-import pickle
 from datetime import date
+from queue import Queue
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -53,6 +53,7 @@ from googleapiclient.discovery import build
 # Download the client_secret.json to same dir as this script
 #########################################################################
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 APPLICATION_NAME = 'Drive File API - Python'
@@ -131,15 +132,20 @@ def downloadFile(service, spaces, file_name, file_id, mimeType, dest_folder):
                 file_name = file_name + ".pdf"
         if valid:
             print("{}Downloading -- {}".format(spaces, file_name))
-            response = request.execute()
             filepath = os.path.join(dest_folder, file_name)
 
             # Make sure the path exist before writing
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             with open(filepath, "wb") as wer:
+                done = False
+                downloader = MediaIoBaseDownload(wer, request)
                 if args.verbose:
                     print("Writing file {} to folder {}.\n".format(file_name, dest_folder))
-                wer.write(response)
+
+                while done is False:
+                    status, done = downloader.next_chunk()
+                    print("\rDownload %s (%s/%s): %d%%." % (file_name, sizeof_fmt(status.total_size), sizeof_fmt(status.resumable_progress), int(status.progress() * 100)), end='')
+
                 global num_files
                 num_files += 1
 
@@ -310,6 +316,14 @@ def main(basedir):
 
 def getNameFromId(service, fileId):
     return service.files().get(fileId=fileId).execute()['name']
+
+
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
 def isId(id: str):
