@@ -144,8 +144,9 @@ def downloadFile(service, spaces, file_name, file_id, mimeType, dest_folder):
 
                 while done is False:
                     status, done = downloader.next_chunk()
-                    print("\rDownload %s (%s/%s): %d%%." % (file_name, sizeof_fmt(status.total_size), sizeof_fmt(status.resumable_progress), int(status.progress() * 100)), end='')
-
+                    if status is not None and (status.total_size is not None and status.resumable_progress is not None):
+                        print("\rDownload %s (%s/%s): %d%%." % (file_name, sizeof_fmt(status.total_size), sizeof_fmt(status.resumable_progress), int(status.progress() * 100)), end='')
+                print("Download OK")
                 global num_files
                 num_files += 1
 
